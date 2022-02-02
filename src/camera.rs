@@ -1,14 +1,27 @@
 use macroquad::input::{is_key_down, mouse_position, KeyCode};
-use macroquad::math::Vec2;
+use macroquad::math::{vec2, Vec2};
 use macroquad::window::{screen_height, screen_width};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Camera {
     pub target: Vec2,
+    pub rotation: f32,
     pub zoom: Vec2,
 }
 
 impl Camera {
+    pub fn new() -> Self {
+        let starting_zoom = 1.0 / screen_width();
+        Self {
+            target: vec2(0.0, 0.0),
+            rotation: 0.0,
+            zoom: vec2(
+                starting_zoom,
+                starting_zoom * screen_width() / screen_height(),
+            ),
+        }
+    }
+
     #[must_use]
     pub fn mouse_position(&self) -> Vec2 {
         let mouse = mouse_position();

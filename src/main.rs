@@ -33,96 +33,22 @@
 )]
 #![allow(clippy::cast_precision_loss)]
 
-use macroquad::{
-    camera::{set_camera, set_default_camera, Camera2D},
-    color::{colors, Color},
-    color_u8,
-    input::{is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton},
-    logging::{debug, error, info, warn},
-    math::{clamp, vec2, Vec2},
-    rand,
-    shapes::{draw_circle, draw_line, draw_rectangle},
-    text::draw_text,
-    texture::{draw_texture, Image, Texture2D},
-    time::{get_fps, get_time},
-    window::{clear_background, next_frame, screen_height, screen_width},
-};
+use macroquad::window::next_frame;
 
-mod camera;
-use camera::{top_down_camera_controls, Camera};
-mod common;
-mod objects;
-use objects::noise::Noise;
+pub mod camera;
+pub mod common;
+pub mod objects;
+pub mod world;
 
-static mut NOISE: Noise = Noise::new();
-
-pub fn setup() {}
-
-pub fn draw(_delta: f64) {
-    let lmb = is_mouse_button_pressed(MouseButton::Left);
-    /* unsafe {
-        for (i, noise) in NOISES.iter().enumerate() {
-            noise.draw_at(
-                0.0 + f32::from(NOISE_SIZE * i as u16),
-                0.0, // + f32::from(NOISE_SIZE * i as u16),
-            );
-        }
-    } */
-    unsafe {}
-
-    if lmb {}
-
-    draw_ui();
-}
-
-fn draw_ui() {
-    // Screen space, render fixed ui
-    set_default_camera();
-    draw_text(
-        &format!("mouse: {:?}, fps: {}", mouse_position(), get_fps()),
-        10.0,
-        20.0,
-        30.0,
-        colors::BLACK,
-    );
-}
-
-#[allow(clippy::future_not_send, clippy::too_many_lines)]
+#[allow(clippy::future_not_send)]
 #[macroquad::main("Name")]
 async fn main() {
-    let starting_zoom = 1.0 / screen_width();
-    let mut main_camera = Camera {
-        target: vec2(0.0, 0.0),
-        zoom: vec2(
-            starting_zoom,
-            starting_zoom * screen_width() / screen_height(),
-        ),
-    };
+    let mut world = world::World::new();
+    world.setup();
 
     loop {
-        top_down_camera_controls(&mut main_camera);
-
-        // Camera space, render game objects
-        set_camera(&Camera2D {
-            target: main_camera.target,
-            zoom: main_camera.zoom,
-            ..Camera2D::default()
-        });
-
+        world.update();
+        world.draw();
         next_frame().await;
     }
 }
-
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
-struct Time {
-    elapsed_seconds: f64,
-    overall_time: f64,
-}
-
-/*
-let delta = get_time() - self.time.overall_time;
-self.time = Time {
-    elapsed_seconds: delta,
-    overall_time: get_time(),
-};
-*/

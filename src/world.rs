@@ -8,9 +8,10 @@ use macroquad::input::{
     is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::math::{vec2, Mat3};
+use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::text::draw_text;
 use macroquad::time::{get_fps, get_time};
-use macroquad::window::clear_background;
+use macroquad::window::{clear_background, screen_height, screen_width};
 
 use crate::camera::{top_down_camera_controls, Camera};
 use crate::objects::noise::Noise;
@@ -37,8 +38,8 @@ impl World {
     }
 
     pub fn setup(&mut self) {
-        let mut new_noise = Noise::new();
-        new_noise.set_noise(0, 0.01);
+        let mut new_noise = Noise::new(2000);
+        new_noise.set_noise(0, 0.001);
         self.noise_generators.push(new_noise);
     }
 
@@ -92,11 +93,42 @@ impl World {
             ..Camera2D::default()
         });
 
-        self.noise_generators
-            .last()
-            .expect("No noise found, consider adding one in setup")
-            .draw_at(0.0, 0.0);
+        let (width, height) = (screen_width(), screen_height());
+        let (center_x, center_y) = (self.main_camera.target.x, self.main_camera.target.y);
+        let top_left_x = center_x - width;
+        let top_left_y = center_y - height;
+        draw_rectangle_lines(
+            top_left_x,
+            top_left_y,
+            width * 2.0,
+            height * 2.0,
+            50.0,
+            color_u8!(50, 120, 100, 100),
+        );
 
+        let grid_height = 10;
+        let grid_width = 10;
+        let grid_spacing = (height * 2.0 / grid_height as f32);
+
+        let noise = self
+            .noise_generators
+            .get(0)
+            .expect("Should have a noise initialised in setup");
+        for grid_y in 0..grid_height {
+            let y = grid_y as f32 * grid_spacing + top_left_y;
+            for grid_x in 0..grid_width {
+                let x = grid_x as f32 * grid_spacing + top_left_x;
+                let noise_value =
+                    noise.get_point((x.abs() / 100.0) as u32, (y.abs() / 100.0) as u32);
+                draw_rectangle(
+                    x,
+                    y,
+                    grid_spacing,
+                    grid_spacing,
+                    color_u8!(120, 120, 120, noise_value * 255.0),
+                );
+            }
+        }
         self.player.draw();
         self.draw_ui();
     }
@@ -108,6 +140,24 @@ impl World {
             &format!("mouse: {:?}, fps: {}", mouse_position(), get_fps()),
             10.0,
             20.0,
+            30.0,
+            colors::BLACK,
+        );
+        let noise = self
+            .noise_generators
+            .get(0)
+            .expect("Should have a noise after setup");
+        let noise_value = noise.get_point(
+            (self.player.center.x / 100.0).abs() as u32,
+            (self.player.center.y / 100.0).abs() as u32,
+        );
+        draw_text(
+            &format!(
+                "x:{:3.0} y:{:3.0}, biome: {}",
+                self.player.center.x, self.player.center.y, noise_value
+            ),
+            10.0,
+            40.0,
             30.0,
             colors::BLACK,
         );

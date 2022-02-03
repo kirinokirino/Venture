@@ -6,6 +6,7 @@ use once_cell::sync::OnceCell;
 use simple_simplex::NoiseConfig;
 
 pub struct Noise {
+    size: u16,
     noise: OnceCell<NoiseConfig>,
     image: OnceCell<Image>,
     texture: OnceCell<Texture2D>,
@@ -13,8 +14,9 @@ pub struct Noise {
 
 impl Noise {
     #[must_use]
-    pub const fn new() -> Self {
+    pub const fn new(size: u16) -> Self {
         Self {
+            size,
             noise: OnceCell::new(),
             image: OnceCell::new(),
             texture: OnceCell::new(),
@@ -34,7 +36,10 @@ impl Noise {
     pub fn get_point(&self, x: u32, y: u32) -> f32 {
         self.image
             .get_or_init(|| {
-                Self::gen_image(250, self.noise.get_or_init(|| Self::gen_noise(0, 0.01)))
+                Self::gen_image(
+                    self.size,
+                    self.noise.get_or_init(|| Self::gen_noise(0, 0.01)),
+                )
             })
             .get_pixel(x, y)
             .r
@@ -70,7 +75,10 @@ impl Noise {
         draw_texture(
             *self.texture.get_or_init(|| {
                 Texture2D::from_image(self.image.get_or_init(|| {
-                    Self::gen_image(250, self.noise.get_or_init(|| Self::gen_noise(0, 0.01)))
+                    Self::gen_image(
+                        self.size,
+                        self.noise.get_or_init(|| Self::gen_noise(0, 0.01)),
+                    )
                 }))
             }),
             x,

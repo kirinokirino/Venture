@@ -47,6 +47,7 @@ async fn main() {
     world.setup();
 
     loop {
+        world.input();
         world.update();
         world.draw();
         next_frame().await;

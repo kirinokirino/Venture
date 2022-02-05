@@ -5,7 +5,7 @@ use macroquad::camera::{set_camera, Camera2D};
 use macroquad::color::{colors, Color};
 use macroquad::color_u8;
 use macroquad::input::{
-    is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
+    is_key_down, is_key_pressed, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::math::{vec2, Mat3};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
@@ -50,29 +50,32 @@ impl World {
         let A = is_key_down(KeyCode::A);
         let D = is_key_down(KeyCode::D) || is_key_down(KeyCode::E);
 
-        let mut delta = vec2(0.0, 0.0);
-        if W {
-            delta.y += 1.0;
-        } else if S {
-            delta.y -= 1.0;
+        if is_key_down(KeyCode::LeftControl) {
+            top_down_camera_controls(&mut self.main_camera);
+        } else {
+            let mut delta = vec2(0.0, 0.0);
+            if W {
+                delta.y += 1.0;
+            } else if S {
+                delta.y -= 1.0;
+            }
+            let mut rotation = 0.0;
+            if A {
+                rotation += 0.01;
+            } else if D {
+                rotation -= 0.01;
+            }
+            self.player.rotation += rotation;
+            let r = Mat3::from_rotation_z(self.player.rotation);
+            self.player.center += r.transform_vector2(delta);
+
+            self.main_camera
+                .set_follow(Some(self.player.center), Some(self.player.rotation));
         }
-        let mut rotation = 0.0;
-        if A {
-            rotation += 0.01;
-        } else if D {
-            rotation -= 0.01;
-        }
-        self.player.rotation += rotation;
-        let r = Mat3::from_rotation_z(self.player.rotation);
-        self.player.center += r.transform_vector2(delta);
     }
 
     pub fn update(&mut self) {
         self.update_time(get_time());
-
-        self.main_camera.followed_pos = Some(self.player.center);
-        self.main_camera.followed_rot = Some(self.player.rotation);
-        //top_down_camera_controls(&mut self.main_camera);
         self.main_camera.update();
     }
 
@@ -108,7 +111,7 @@ impl World {
 
         let grid_height = 10;
         let grid_width = 10;
-        let grid_spacing = (height * 2.0 / grid_height as f32);
+        let grid_spacing = height * 2.0 / grid_height as f32;
 
         let noise = self
             .noise_generators

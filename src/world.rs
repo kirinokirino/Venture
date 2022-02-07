@@ -51,9 +51,20 @@ impl World {
         new_noise.set_noise(0, 0.001);
         self.noise_generators.push(new_noise);
 
-        let default_chunk = Chunk::new();
+        let mut chunk = Chunk::new();
+        chunk.add_stone(vec2(0.0, 0.0), 0.0, 20.0);
+        chunk.add_stone(vec2(100.0, 60.0), 40.0, 60.0);
+        chunk.add_stone(vec2(300.0, 100.0), 120.0, 34.0);
+        chunk.add_stone(vec2(180.0, 250.0), 160.0, 54.0);
+        chunk.add_road_segment(vec2(500.0, 60.0), 0.0, 40.0);
+        chunk.add_road_segment(vec2(500.0, 100.0), -90.0, 40.0);
+        chunk.add_road_segment(vec2(540.0, 100.0), 180.0, 100.0);
+
+        chunk.add_random_mover(vec2(540.0, 100.0), 180.0, 100.0, 5.0);
+        chunk.add_random_mover(vec2(300.0, 300.0), 0.0, 15.0, 1.0);
+        chunk.add_random_mover(vec2(300.0, 300.0), 0.0, 15.0, -1.0);
         let world_center = WorldCoordinate { x: 0, y: 0 };
-        self.chunks.insert(world_center, default_chunk);
+        self.chunks.insert(world_center, chunk);
     }
 
     pub fn input(&mut self) {

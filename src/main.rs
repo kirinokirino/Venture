@@ -37,6 +37,7 @@ use macroquad::window::next_frame;
 
 pub mod camera;
 pub mod common;
+pub mod entity;
 pub mod special;
 pub mod world;
 

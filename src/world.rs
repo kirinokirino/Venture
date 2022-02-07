@@ -5,7 +5,7 @@ use macroquad::camera::{set_camera, Camera2D};
 use macroquad::color::{colors, Color};
 use macroquad::color_u8;
 use macroquad::input::{
-    is_key_down, is_key_pressed, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
+    is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::math::{vec2, Mat3};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
@@ -13,9 +13,14 @@ use macroquad::text::draw_text;
 use macroquad::time::{get_fps, get_time};
 use macroquad::window::{clear_background, screen_height, screen_width};
 
+use indexmap::IndexMap;
+
 use crate::camera::{top_down_camera_controls, Camera};
-use crate::objects::noise::Noise;
-use crate::objects::square::Square;
+use crate::special::chunk::Chunk;
+use crate::special::noise::Noise;
+use crate::special::square::Square;
+
+pub const CHUNK_SIZE: f32 = 20_000.0;
 
 pub struct World {
     time: Time,
@@ -23,6 +28,8 @@ pub struct World {
 
     main_camera: Camera,
     player: Square,
+
+    chunks: IndexMap<WorldCoordinate, Chunk>,
 }
 
 impl World {
@@ -34,6 +41,8 @@ impl World {
 
             main_camera: Camera::new(),
             player: Square::new(vec2(100.0, 0.0)),
+
+            chunks: IndexMap::new(),
         }
     }
 
@@ -41,10 +50,14 @@ impl World {
         let mut new_noise = Noise::new(2000);
         new_noise.set_noise(0, 0.001);
         self.noise_generators.push(new_noise);
+
+        let default_chunk = Chunk::new();
+        let world_center = WorldCoordinate { x: 0, y: 0 };
+        self.chunks.insert(world_center, default_chunk);
     }
 
     pub fn input(&mut self) {
-        let lmb = is_mouse_button_pressed(MouseButton::Left);
+        let _lmb = is_mouse_button_pressed(MouseButton::Left);
         let W = is_key_down(KeyCode::W) || is_key_down(KeyCode::Comma);
         let S = is_key_down(KeyCode::S) || is_key_down(KeyCode::O);
         let A = is_key_down(KeyCode::A);
@@ -53,17 +66,18 @@ impl World {
         if is_key_down(KeyCode::LeftControl) {
             top_down_camera_controls(&mut self.main_camera);
         } else {
+            let reversed = -1.0;
             let mut delta = vec2(0.0, 0.0);
             if W {
-                delta.y += 1.0;
+                delta.y += 1.0 * reversed;
             } else if S {
-                delta.y -= 1.0;
+                delta.y -= 1.0 * reversed;
             }
             let mut rotation = 0.0;
             if A {
-                rotation += 0.01;
+                rotation += 0.01 * reversed;
             } else if D {
-                rotation -= 0.01;
+                rotation -= 0.01 * reversed;
             }
             self.player.rotation += rotation;
             let r = Mat3::from_rotation_z(self.player.rotation);
@@ -77,6 +91,9 @@ impl World {
     pub fn update(&mut self) {
         self.update_time(get_time());
         self.main_camera.update();
+        for (pos, chunk) in &mut self.chunks {
+            chunk.update();
+        }
     }
 
     fn update_time(&mut self, time: f64) {
@@ -89,10 +106,11 @@ impl World {
     pub fn draw(&self) {
         clear_background(color_u8!(255, 255, 255, 255));
         // Camera space, render game objects
+        let zoom = vec2(self.main_camera.zoom.x, -self.main_camera.zoom.y);
         set_camera(&Camera2D {
             target: self.main_camera.target,
             rotation: -self.main_camera.rotation.to_degrees(),
-            zoom: self.main_camera.zoom,
+            zoom,
             ..Camera2D::default()
         });
 
@@ -118,9 +136,9 @@ impl World {
             .get(0)
             .expect("Should have a noise initialised in setup");
         for grid_y in 0..grid_height {
-            let y = grid_y as f32 * grid_spacing + top_left_y;
+            let y = (grid_y as f32).mul_add(grid_spacing, top_left_y);
             for grid_x in 0..grid_width {
-                let x = grid_x as f32 * grid_spacing + top_left_x;
+                let x = (grid_x as f32).mul_add(grid_spacing, top_left_x);
                 let noise_value =
                     noise.get_point((x.abs() / 100.0) as u32, (y.abs() / 100.0) as u32);
                 draw_rectangle(
@@ -128,10 +146,20 @@ impl World {
                     y,
                     grid_spacing,
                     grid_spacing,
-                    color_u8!(120, 120, 120, noise_value * 255.0),
+                    color_u8!(
+                        120,
+                        noise_value * 255.0,
+                        noise_value * 255.0,
+                        noise_value * 255.0
+                    ),
                 );
             }
         }
+
+        for (pos, chunk) in &self.chunks {
+            chunk.draw();
+        }
+
         self.player.draw();
         self.draw_ui();
     }
@@ -177,4 +205,10 @@ impl Default for World {
 struct Time {
     delta: f64,
     overall: f64,
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+struct WorldCoordinate {
+    x: i32,
+    y: i32,
 }

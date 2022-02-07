@@ -1,6 +1,6 @@
 use std::default::Default;
 
-use macroquad::input::{is_key_down, is_key_pressed, mouse_position, KeyCode};
+use macroquad::input::{is_key_down, mouse_position, KeyCode};
 use macroquad::math::{vec2, Vec2};
 use macroquad::window::{screen_height, screen_width};
 

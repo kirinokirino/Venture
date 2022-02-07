@@ -19,6 +19,7 @@ categories = ["games"]
 macroquad = { version = "0.3.13", default-features = false } #, features = ["audio", "log-rs"] }
 simple-simplex = "1.0"
 once_cell = "1.9"
+indexmap = "1.8"
 
 # Optional: Uncommenting the following improves compile times, but reduces the amount of debug info to 'line number tables only'
 # In most cases the gains are negligible, but if you are on macos and have slow compile times you should see significant gains.

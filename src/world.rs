@@ -41,7 +41,7 @@ impl World {
             noise_generators: Vec::new(),
 
             main_camera: Camera::new(),
-            player: Square::new(vec2(100.0, 0.0)),
+            player: Square::new(vec2(CHUNK_SIZE / 2.0, CHUNK_SIZE / 2.0)),
 
             chunks: IndexMap::new(),
         }
@@ -60,17 +60,6 @@ impl World {
                 .last()
                 .expect("World needs to have a noise generator to populate a chunk"),
         );
-        chunk.add_stone(vec2(0.0, 0.0), 0.0, 20.0);
-        chunk.add_stone(vec2(100.0, 60.0), 40.0, 60.0);
-        chunk.add_stone(vec2(300.0, 100.0), 120.0, 34.0);
-        chunk.add_stone(vec2(180.0, 250.0), 160.0, 54.0);
-        chunk.add_road_segment(vec2(500.0, 60.0), 0.0, 40.0);
-        chunk.add_road_segment(vec2(500.0, 100.0), -90.0, 40.0);
-        chunk.add_road_segment(vec2(540.0, 100.0), 180.0, 100.0);
-
-        chunk.add_random_mover(vec2(540.0, 100.0), 180.0, 100.0, 5.0);
-        chunk.add_random_mover(vec2(300.0, 300.0), 0.0, 15.0, 1.0);
-        chunk.add_random_mover(vec2(300.0, 300.0), 0.0, 15.0, -1.0);
         self.chunks.insert(world_center, chunk);
     }
 
@@ -81,6 +70,7 @@ impl World {
         let A = is_key_down(KeyCode::A);
         let D = is_key_down(KeyCode::D) || is_key_down(KeyCode::E);
 
+        let player_speed = -3.0;
         if is_key_down(KeyCode::LeftControl) {
             top_down_camera_controls(&mut self.main_camera);
         } else {
@@ -99,7 +89,7 @@ impl World {
             }
             self.player.rotation += rotation;
             let r = Mat3::from_rotation_z(self.player.rotation);
-            self.player.center += r.transform_vector2(delta);
+            self.player.center += r.transform_vector2(delta * player_speed);
 
             self.main_camera
                 .set_follow(Some(self.player.center), Some(self.player.rotation));

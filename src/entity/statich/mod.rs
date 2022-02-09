@@ -14,18 +14,9 @@ pub enum Static {
 impl PartialEq for Static {
     fn eq(&self, other: &Self) -> bool {
         match self {
-            Self::Stone(_) => match other {
-                Self::Stone(_) => true,
-                _ => false,
-            },
-            Self::Road(_) => match other {
-                Self::Road(_) => true,
-                _ => false,
-            },
-            Self::Terrain(_) => match other {
-                Self::Terrain(_) => true,
-                _ => false,
-            },
+            Self::Stone(_) => matches!(other, Self::Stone(_)),
+            Self::Road(_) => matches!(other, Self::Road(_)),
+            Self::Terrain(_) => matches!(other, Self::Terrain(_)),
         }
     }
 }
@@ -42,7 +33,7 @@ impl Ord for Static {
             Self::Road(_) => match other {
                 Self::Road(_) => Ordering::Equal,
                 Self::Stone(_) => Ordering::Less,
-                _ => Ordering::Greater,
+                Self::Terrain(_) => Ordering::Greater,
             },
             Self::Terrain(_) => match other {
                 Self::Terrain(_) => Ordering::Equal,

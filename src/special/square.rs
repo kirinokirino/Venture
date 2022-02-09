@@ -14,7 +14,7 @@ impl Square {
     pub const fn new(center: Vec2) -> Self {
         Self {
             center,
-            rotation: 0.0,
+            rotation: std::f32::consts::PI,
             size: 25.0,
         }
     }

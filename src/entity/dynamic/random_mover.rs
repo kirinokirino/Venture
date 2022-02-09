@@ -26,6 +26,10 @@ impl RandomMover {
 }
 
 impl Update for RandomMover {
+    fn get_pos(&self) -> Vec2 {
+        self.position
+    }
+
     fn update(&mut self, _chunk: &mut Chunk) {
         self.rotation += rand::gen_range(-10., 10.);
         let delta = vec2(0.0, self.speed);

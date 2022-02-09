@@ -1,25 +1,19 @@
 use macroquad::color::Color;
 use macroquad::color_u8;
-use macroquad::texture::{draw_texture, Image, Texture2D};
+use macroquad::texture::Image;
 
 use once_cell::sync::OnceCell;
 use simple_simplex::NoiseConfig;
 
 pub struct Noise {
-    size: u16,
     noise: OnceCell<NoiseConfig>,
-    image: OnceCell<Image>,
-    texture: OnceCell<Texture2D>,
 }
 
 impl Noise {
     #[must_use]
-    pub const fn new(size: u16) -> Self {
+    pub const fn new() -> Self {
         Self {
-            size,
             noise: OnceCell::new(),
-            image: OnceCell::new(),
-            texture: OnceCell::new(),
         }
     }
 
@@ -33,16 +27,13 @@ impl Noise {
         }
     }
 
-    pub fn get_point(&self, x: u32, y: u32) -> f32 {
-        self.image
-            .get_or_init(|| {
-                Self::gen_image(
-                    self.size,
-                    self.noise.get_or_init(|| Self::gen_noise(0, 0.01)),
-                )
-            })
-            .get_pixel(x, y)
-            .r
+    pub fn get(&self) -> &NoiseConfig {
+        self.noise.get().expect("tried to get uninitialized noise")
+    }
+
+    pub fn get_point(&self, x: f32, y: f32) -> f32 {
+        let noise = self.get();
+        noise.generate_range(x, y)
     }
 
     fn gen_noise(seed: u64, frequency: f32) -> NoiseConfig {
@@ -70,20 +61,5 @@ impl Noise {
             }
         }
         image
-    }
-    pub fn draw_at(&self, x: f32, y: f32) {
-        draw_texture(
-            *self.texture.get_or_init(|| {
-                Texture2D::from_image(self.image.get_or_init(|| {
-                    Self::gen_image(
-                        self.size,
-                        self.noise.get_or_init(|| Self::gen_noise(0, 0.01)),
-                    )
-                }))
-            }),
-            x,
-            y,
-            color_u8!(255, 255, 255, 255),
-        );
     }
 }

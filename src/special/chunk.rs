@@ -1,19 +1,31 @@
-use std::default::Default;
-
-use macroquad::color::colors;
+use macroquad::color::Color;
+use macroquad::color_u8;
+use macroquad::logging::warn;
 use macroquad::math::{vec2, Vec2};
-use macroquad::text::draw_text;
+use macroquad::rand;
+use macroquad::texture::{draw_texture, Image, Texture2D};
 
+use once_cell::sync::OnceCell;
+
+use crate::common::map;
 use crate::entity::dynamic::random_mover::RandomMover;
 use crate::entity::dynamic::updatable::Update;
 use crate::entity::statich::road::Segment;
 use crate::entity::statich::stone::Stone;
+use crate::entity::statich::terrain::Terrain;
 use crate::entity::statich::Static;
+use crate::special::noise::Noise;
+
+use crate::world::WorldCoordinate;
 use crate::world::CHUNK_SIZE;
+use crate::world::NOISE_IMAGE_SIZE;
 
 pub struct Chunk {
     dynamics: Vec<Option<Box<dyn Update>>>,
     statics: Vec<Static>,
+
+    noise_image: OnceCell<Image>,
+    noise_texture: OnceCell<Texture2D>,
 }
 
 impl Chunk {
@@ -22,7 +34,106 @@ impl Chunk {
         Self {
             dynamics: Vec::new(),
             statics: Vec::new(),
+            noise_image: OnceCell::new(),
+            noise_texture: OnceCell::new(),
         }
+    }
+
+    pub fn init(&mut self, noise: &Noise) {
+        let image = Noise::gen_image(NOISE_IMAGE_SIZE, noise.get());
+        match self.noise_image.set(image) {
+            Ok(_) => (),
+            Err(_) => warn!("Tried to reinit chunk"),
+        }
+    }
+
+    pub fn populate(&mut self, world_position: WorldCoordinate, noise: &Noise) {
+        self.init(noise);
+        let cell_scale = 50.0;
+        let cell_size = (CHUNK_SIZE / f32::from(NOISE_IMAGE_SIZE)) * cell_scale;
+        let cells = (CHUNK_SIZE / cell_size) as usize;
+        debug_assert!(cells < std::u32::MAX.try_into().expect("u32 fits into usize"));
+        let (xoff, yoff) = world_position.offsets(CHUNK_SIZE);
+        println!(
+            "xoff: {}, yoff: {}, cell_size: {}, cells: {}",
+            xoff, yoff, cell_size, cells
+        );
+        for y in 0..=cells {
+            let pos_y = (y as f32).mul_add(cell_size, yoff);
+            for x in 0..=cells {
+                let pos_x = (x as f32).mul_add(cell_size, xoff);
+
+                let noise_x = x * cell_scale as usize;
+                let noise_y = y * cell_scale as usize;
+                let noise_value =
+                    self.get_point(noise_x.try_into().unwrap(), noise_y.try_into().unwrap());
+
+                self.populate_cell(pos_x, pos_y, cell_size, noise_value);
+
+                self.statics.push(Static::Terrain(Terrain::new(
+                    vec2(pos_x as f32, pos_y as f32),
+                    noise_value,
+                    cell_size as f32,
+                )));
+            }
+        }
+    }
+
+    fn populate_cell(&mut self, x: f32, y: f32, cell_size: f32, noise_value: f32) {
+        let max_stone_size = 80.0;
+        let noise_value = noise_value as u8;
+        match noise_value {
+            0..=99 => {
+                let stones = rand::gen_range(0, 1 + 1);
+                for _ in 0..stones {
+                    let pos_x = rand::gen_range(x, x + cell_size);
+                    let pos_y = rand::gen_range(y, y + cell_size);
+                    self.statics.push(Static::Stone(Stone::new(
+                        vec2(pos_x as f32, pos_y as f32),
+                        f32::from(noise_value) * 3.0,
+                        rand::gen_range(5.0, max_stone_size / 3.0) as f32,
+                    )));
+                }
+            }
+            100..=199 => {
+                let stones = rand::gen_range(0, 2 + 1);
+                for _ in 0..stones {
+                    let pos_x = rand::gen_range(x, x + cell_size);
+                    let pos_y = rand::gen_range(y, y + cell_size);
+                    self.statics.push(Static::Stone(Stone::new(
+                        vec2(pos_x as f32, pos_y as f32),
+                        f32::from(noise_value) * 3.0,
+                        rand::gen_range(5.0, max_stone_size / 2.0) as f32,
+                    )));
+                }
+            }
+            200..=255 => {
+                let stones = rand::gen_range(0, 3 + 1);
+                for _ in 0..stones {
+                    let pos_x = rand::gen_range(x, x + cell_size);
+                    let pos_y = rand::gen_range(y, y + cell_size);
+                    self.statics.push(Static::Stone(Stone::new(
+                        vec2(pos_x as f32, pos_y as f32),
+                        f32::from(noise_value) * 3.0,
+                        rand::gen_range(5.0, max_stone_size) as f32,
+                    )));
+                }
+            }
+        }
+    }
+
+    pub fn get_point(&self, x: u32, y: u32) -> f32 {
+        map(
+            self.noise_image
+                .get()
+                .expect("Chunk must be initialised to get the point from the noise image")
+                .get_pixel(x, y)
+                .r,
+            0.0,
+            1.0,
+            0.0,
+            255.0,
+        )
     }
 
     pub fn add_stone(&mut self, position: Vec2, rotation: f32, size: f32) {
@@ -43,8 +154,11 @@ impl Chunk {
 
     pub fn update(&mut self) {
         for item in 0..self.dynamics.len() {
-            let mut dynamic = std::mem::replace(self.dynamics.get_mut(item).unwrap(), None);
-            dynamic.as_mut().unwrap().update(self);
+            let mut dynamic = std::mem::replace(&mut self.dynamics[item], None);
+            dynamic
+                .as_mut()
+                .expect("should get dynamic entity after mem::replace")
+                .update(self);
             self.dynamics[item] = dynamic;
         }
     }
@@ -53,12 +167,27 @@ impl Chunk {
         for static_entity in &self.statics {
             match static_entity {
                 Static::Stone(stone) => stone.draw(),
-                Static::Road(seg) => seg.draw(),
+                Static::Road(segment) => segment.draw(),
+                Static::Terrain(terrain) => terrain.draw(),
             }
         }
         for dynamic_entity in &self.dynamics {
-            dynamic_entity.as_ref().unwrap().draw();
+            dynamic_entity
+                .as_ref()
+                .expect("every dynamic entity should be present in draw call")
+                .draw();
         }
+    }
+
+    pub fn draw_noise_texture(&self, x: f32, y: f32) {
+        let texture = self.noise_texture.get_or_init(|| {
+            Texture2D::from_image(
+                self.noise_image
+                    .get()
+                    .expect("noise_image should be initialized before drawing the noise texture"),
+            )
+        });
+        draw_texture(*texture, x, y, color_u8!(255, 255, 255, 255));
     }
 }
 

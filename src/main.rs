@@ -31,8 +31,7 @@
     clippy::as_conversions,
     clippy::verbose_file_reads
 )]
-#![allow(clippy::cast_precision_loss)]
-
+#![allow(clippy::cast_precision_loss, clippy::missing_panics_doc)]
 use macroquad::window::next_frame;
 
 pub mod camera;

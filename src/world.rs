@@ -8,7 +8,7 @@ use macroquad::input::{
     is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::math::{vec2, Mat3};
-use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
+use macroquad::shapes::draw_rectangle_lines;
 use macroquad::text::draw_text;
 use macroquad::time::{get_fps, get_time};
 use macroquad::window::{clear_background, screen_height, screen_width};
@@ -21,6 +21,7 @@ use crate::special::noise::Noise;
 use crate::special::square::Square;
 
 pub const CHUNK_SIZE: f32 = 20_000.0;
+pub const NOISE_IMAGE_SIZE: u16 = 2001;
 
 pub struct World {
     time: Time,
@@ -47,11 +48,18 @@ impl World {
     }
 
     pub fn setup(&mut self) {
-        let mut new_noise = Noise::new(2000);
+        let mut new_noise = Noise::new();
         new_noise.set_noise(0, 0.001);
         self.noise_generators.push(new_noise);
 
         let mut chunk = Chunk::new();
+        let world_center = WorldCoordinate { x: 0, y: 0 };
+        chunk.populate(
+            world_center,
+            self.noise_generators
+                .last()
+                .expect("World needs to have a noise generator to populate a chunk"),
+        );
         chunk.add_stone(vec2(0.0, 0.0), 0.0, 20.0);
         chunk.add_stone(vec2(100.0, 60.0), 40.0, 60.0);
         chunk.add_stone(vec2(300.0, 100.0), 120.0, 34.0);
@@ -63,7 +71,6 @@ impl World {
         chunk.add_random_mover(vec2(540.0, 100.0), 180.0, 100.0, 5.0);
         chunk.add_random_mover(vec2(300.0, 300.0), 0.0, 15.0, 1.0);
         chunk.add_random_mover(vec2(300.0, 300.0), 0.0, 15.0, -1.0);
-        let world_center = WorldCoordinate { x: 0, y: 0 };
         self.chunks.insert(world_center, chunk);
     }
 
@@ -102,7 +109,7 @@ impl World {
     pub fn update(&mut self) {
         self.update_time(get_time());
         self.main_camera.update();
-        for (pos, chunk) in &mut self.chunks {
+        for (_pos, chunk) in &mut self.chunks {
             chunk.update();
         }
     }
@@ -138,36 +145,7 @@ impl World {
             color_u8!(50, 120, 100, 100),
         );
 
-        let grid_height = 10;
-        let grid_width = 10;
-        let grid_spacing = height * 2.0 / grid_height as f32;
-
-        let noise = self
-            .noise_generators
-            .get(0)
-            .expect("Should have a noise initialised in setup");
-        for grid_y in 0..grid_height {
-            let y = (grid_y as f32).mul_add(grid_spacing, top_left_y);
-            for grid_x in 0..grid_width {
-                let x = (grid_x as f32).mul_add(grid_spacing, top_left_x);
-                let noise_value =
-                    noise.get_point((x.abs() / 100.0) as u32, (y.abs() / 100.0) as u32);
-                draw_rectangle(
-                    x,
-                    y,
-                    grid_spacing,
-                    grid_spacing,
-                    color_u8!(
-                        120,
-                        noise_value * 255.0,
-                        noise_value * 255.0,
-                        noise_value * 255.0
-                    ),
-                );
-            }
-        }
-
-        for (pos, chunk) in &self.chunks {
+        for (_pos, chunk) in &self.chunks {
             chunk.draw();
         }
 
@@ -187,16 +165,14 @@ impl World {
         );
         let noise = self
             .noise_generators
-            .get(0)
-            .expect("Should have a noise after setup");
-        let noise_value = noise.get_point(
-            (self.player.center.x / 100.0).abs() as u32,
-            (self.player.center.y / 100.0).abs() as u32,
-        );
+            .last()
+            .expect("World should have at least 1 initialized noise generator");
         draw_text(
             &format!(
                 "x:{:3.0} y:{:3.0}, biome: {}",
-                self.player.center.x, self.player.center.y, noise_value
+                self.player.center.x,
+                self.player.center.y,
+                noise.get_point(self.player.center.x, self.player.center.y)
             ),
             10.0,
             40.0,
@@ -219,7 +195,14 @@ struct Time {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-struct WorldCoordinate {
+pub struct WorldCoordinate {
     x: i32,
     y: i32,
+}
+
+impl WorldCoordinate {
+    #[must_use]
+    pub fn offsets(&self, chunk_size: f32) -> (f32, f32) {
+        (self.x as f32 * chunk_size, self.y as f32 * chunk_size)
+    }
 }

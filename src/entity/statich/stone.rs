@@ -2,7 +2,7 @@ use macroquad::color::DARKGRAY;
 use macroquad::math::Vec2;
 use macroquad::shapes::draw_poly;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub struct Stone {
     position: Vec2,
     rotation: f32,

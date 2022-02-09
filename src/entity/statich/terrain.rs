@@ -3,7 +3,7 @@ use macroquad::color_u8;
 use macroquad::math::Vec2;
 use macroquad::shapes::draw_rectangle;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub struct Terrain {
     position: Vec2,
     color: f32,

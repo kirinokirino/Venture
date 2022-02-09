@@ -77,13 +77,15 @@ impl Chunk {
                 )));
             }
         }
+        self.statics.sort_unstable();
     }
 
     fn populate_cell(&mut self, x: f32, y: f32, cell_size: f32, noise_value: f32) {
         let max_stone_size = 80.0;
         let noise_value = noise_value as u8;
         match noise_value {
-            0..=99 => {
+            0..=49 => (),
+            50..=99 => {
                 let stones = rand::gen_range(0, 1 + 1);
                 for _ in 0..stones {
                     let pos_x = rand::gen_range(x, x + cell_size);

@@ -2,7 +2,7 @@ use macroquad::color::DARKGRAY;
 use macroquad::math::{Mat3, Vec2};
 use macroquad::shapes::draw_line;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub struct Segment {
     position: Vec2,
     rotation: f32,

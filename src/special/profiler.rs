@@ -1,3 +1,4 @@
+#![allow(clippy::pedantic, clippy::nursery)]
 use macroquad::{experimental::collections::storage, telemetry};
 
 use macroquad::prelude::*;
@@ -159,9 +160,9 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
 }
 
 pub fn profiler() {
-	let params = ProfilerParams {
-	            fps_counter_pos: Vec2::new(0.0, 0.0),
-	        };
+    let params = ProfilerParams {
+        fps_counter_pos: Vec2::new(0.0, 0.0),
+    };
     telemetry::pause_gl_capture();
     if storage::try_get::<ProfilerState>().is_none() {
         storage::store(ProfilerState {

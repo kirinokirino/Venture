@@ -24,8 +24,8 @@ use crate::special::chunk::Chunk;
 use crate::special::noise::Noise;
 use crate::special::square::Square;
 
-pub const CHUNK_SIZE: f32 = 5_000.0;
-pub const NOISE_IMAGE_SIZE: u16 = 2001;
+pub const CHUNK_SIZE: u16 = 32;
+pub const NOISE_IMAGE_SIZE: u16 = 256;
 
 pub struct World {
     time: Time,
@@ -45,7 +45,7 @@ impl World {
             noise_generators: Vec::new(),
 
             main_camera: Camera::new(),
-            player: Square::new(vec2(CHUNK_SIZE / 2.0, CHUNK_SIZE / 2.0)),
+            player: Square::new(vec2(0.0, 0.0)),
 
             chunks: IndexMap::new(),
         }
@@ -53,7 +53,7 @@ impl World {
 
     pub fn setup(&mut self) {
         let mut new_noise = Noise::new();
-        new_noise.set_noise(0, 0.001);
+        new_noise.set_noise(0, 0.01);
         self.noise_generators.push(new_noise);
 
         self.generate_chunk(WorldCoordinate { x: 0, y: 0 });

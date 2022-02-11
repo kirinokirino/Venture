@@ -50,26 +50,26 @@ impl Chunk {
 
     pub fn populate(&mut self, world_position: WorldCoordinate, noise: &Noise) {
         self.init(noise);
-        let cell_scale = 50.0;
-        let cell_size = (CHUNK_SIZE / f32::from(NOISE_IMAGE_SIZE)) * cell_scale;
-        let cells = (CHUNK_SIZE / cell_size) as usize;
-        debug_assert!(cells < std::u32::MAX.try_into().expect("u32 fits into usize"));
-        let (xoff, yoff) = world_position.offsets(CHUNK_SIZE);
+
+        let cells = CHUNK_SIZE as usize;
+        let cell_size = 200.0;
+
+        let (xoff, yoff) = world_position.offsets(cells as f32 * cell_size as f32);
         println!(
             "xoff: {}, yoff: {}, cell_size: {}, cells: {}",
             xoff, yoff, cell_size, cells
         );
         for y in 0..cells {
-            let pos_y = (y as f32).mul_add(cell_size, yoff);
+            let pos_y = (y as f32).mul_add(cell_size.into(), yoff);
             for x in 0..cells {
-                let pos_x = (x as f32).mul_add(cell_size, xoff);
+                let pos_x = (x as f32).mul_add(cell_size.into(), xoff);
 
-                let noise_x = x * cell_scale as usize;
-                let noise_y = y * cell_scale as usize;
-                let noise_value =
-                    self.get_point(noise_x.try_into().unwrap(), noise_y.try_into().unwrap());
+                let noise_value = self.get_point(
+                    x as u32 * u32::from((NOISE_IMAGE_SIZE / CHUNK_SIZE)),
+                    y as u32 * u32::from((NOISE_IMAGE_SIZE / CHUNK_SIZE)),
+                );
 
-                self.populate_cell(pos_x, pos_y, cell_size, noise_value);
+                self.populate_cell(pos_x, pos_y, cell_size.into(), noise_value);
 
                 self.statics.push(Static::Terrain(Terrain::new(
                     vec2(pos_x as f32, pos_y as f32),

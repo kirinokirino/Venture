@@ -50,12 +50,13 @@ impl Noise {
     }
 
     #[must_use]
-    pub fn gen_image(size: u16, noise: &NoiseConfig) -> Image {
+    pub fn gen_image(size: u16, xoff: f32, yoff: f32, noise: &NoiseConfig) -> Image {
         let mut image = Image::gen_image_color(size, size, color_u8!(255, 0, 255, 255));
 
         for y in 0..size {
             for x in 0..size {
-                let color: u8 = noise.generate_range(x.into(), y.into()) as u8;
+                let color: u8 =
+                    noise.generate_range(xoff + f32::from(x), yoff + f32::from(y)) as u8;
                 let color = color_u8!(color, color, color, 255);
                 image.set_pixel(u32::from(x), u32::from(y), color);
             }

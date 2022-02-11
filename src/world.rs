@@ -25,6 +25,7 @@ use crate::special::noise::Noise;
 use crate::special::square::Square;
 
 pub const CHUNK_SIZE: u16 = 32;
+pub const CHUNK_TILE_SIZE: f32 = 400.0;
 pub const NOISE_IMAGE_SIZE: u16 = 256;
 
 pub struct World {
@@ -53,18 +54,19 @@ impl World {
 
     pub fn setup(&mut self) {
         let mut new_noise = Noise::new();
-        new_noise.set_noise(0, 0.01);
+        new_noise.set_noise(0, 0.005);
         self.noise_generators.push(new_noise);
 
         self.generate_chunk(WorldCoordinate { x: 0, y: 0 });
-        self.generate_chunk(WorldCoordinate { x: 0, y: 1 });
+        self.generate_chunk(WorldCoordinate { x: 0, y: -1 });
+        self.generate_chunk(WorldCoordinate { x: -1, y: 0 });
+        self.generate_chunk(WorldCoordinate { x: -1, y: -1 });
     }
 
     fn generate_chunk(&mut self, pos: WorldCoordinate) {
         log_string(format!("Chunk spawn at {}", pos).as_str());
-        let mut chunk = Chunk::new();
+        let mut chunk = Chunk::new(pos);
         chunk.populate(
-            pos,
             self.noise_generators
                 .last()
                 .expect("World needs to have a noise generator to populate a chunk"),

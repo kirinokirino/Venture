@@ -1,6 +1,6 @@
 use macroquad::color::Color;
 use macroquad::color_u8;
-use macroquad::logging::warn;
+use macroquad::logging::{info, warn};
 use macroquad::math::{vec2, Rect, Vec2};
 use macroquad::rand;
 use macroquad::texture::{draw_texture, Image, Texture2D};
@@ -17,11 +17,11 @@ use crate::entity::statich::terrain::Terrain;
 use crate::entity::statich::Static;
 use crate::special::noise::Noise;
 
-use crate::world::WorldCoordinate;
-use crate::world::CHUNK_SIZE;
-use crate::world::NOISE_IMAGE_SIZE;
+use crate::world::{WorldCoordinate, CHUNK_SIZE, CHUNK_TILE_SIZE, NOISE_IMAGE_SIZE};
 
 pub struct Chunk {
+    world_position: WorldCoordinate,
+
     pub dynamics: Vec<Option<Box<dyn Update>>>,
     pub statics: Vec<Static>,
 
@@ -31,8 +31,9 @@ pub struct Chunk {
 
 impl Chunk {
     #[must_use]
-    pub fn new() -> Self {
+    pub fn new(world_position: WorldCoordinate) -> Self {
         Self {
+            world_position,
             dynamics: Vec::new(),
             statics: Vec::new(),
             noise_image: OnceCell::new(),
@@ -41,21 +42,22 @@ impl Chunk {
     }
 
     pub fn init(&mut self, noise: &Noise) {
-        let image = Noise::gen_image(NOISE_IMAGE_SIZE, noise.get());
+        let (xoff, yoff) = self.world_position.offsets(f32::from(NOISE_IMAGE_SIZE));
+        let image = Noise::gen_image(NOISE_IMAGE_SIZE, xoff, yoff, noise.get());
         match self.noise_image.set(image) {
-            Ok(_) => (),
+            Ok(_) => info!("noise x: {}, noise y: {}", xoff, yoff),
             Err(_) => warn!("Tried to reinit chunk"),
         }
     }
 
-    pub fn populate(&mut self, world_position: WorldCoordinate, noise: &Noise) {
+    pub fn populate(&mut self, noise: &Noise) {
         self.init(noise);
 
         let cells = CHUNK_SIZE as usize;
-        let cell_size = 200.0;
+        let cell_size = CHUNK_TILE_SIZE;
 
-        let (xoff, yoff) = world_position.offsets(cells as f32 * cell_size as f32);
-        println!(
+        let (xoff, yoff) = self.world_position.offsets(cells as f32 * cell_size as f32);
+        info!(
             "xoff: {}, yoff: {}, cell_size: {}, cells: {}",
             xoff, yoff, cell_size, cells
         );

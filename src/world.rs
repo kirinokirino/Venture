@@ -152,9 +152,12 @@ impl World {
         });
 
         let mut viewport = self.main_camera.viewport_rect();
-        let viewport_scale = 1.2;
-        viewport.scale(viewport_scale, viewport_scale);
-        viewport.move_to(vec2(viewport.x - 100.0, viewport.y - 100.0));
+        viewport.w += CHUNK_TILE_SIZE * 2.0;
+        viewport.h += CHUNK_TILE_SIZE * 2.0;
+        viewport.move_to(vec2(
+            viewport.x - CHUNK_TILE_SIZE,
+            viewport.y - CHUNK_TILE_SIZE,
+        ));
         let (width, height) = (screen_width(), screen_height());
         let (center_x, center_y) = (self.main_camera.target.x, self.main_camera.target.y);
         let top_left_x = center_x - width;
@@ -166,14 +169,6 @@ impl World {
             height * 2.0,
             50.0,
             color_u8!(50, 120, 100, 100),
-        );
-        draw_rectangle_lines(
-            viewport.x,
-            viewport.y,
-            viewport.w,
-            viewport.h,
-            50.0,
-            color_u8!(170, 120, 100, 100),
         );
 
         for (_pos, chunk) in &self.chunks {

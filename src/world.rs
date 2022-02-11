@@ -9,7 +9,7 @@ use macroquad::input::{
     is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::logging::debug;
-use macroquad::math::{vec2, Mat3, Vec2};
+use macroquad::math::{vec2, Mat3, Rect, Vec2};
 use macroquad::rand;
 use macroquad::shapes::draw_rectangle_lines;
 use macroquad::telemetry::log_string;
@@ -149,6 +149,10 @@ impl World {
             ..Camera2D::default()
         });
 
+        let mut viewport = self.main_camera.viewport_rect();
+        let viewport_scale = 1.2;
+        viewport.scale(viewport_scale, viewport_scale);
+        viewport.move_to(vec2(viewport.x - 100.0, viewport.y - 100.0));
         let (width, height) = (screen_width(), screen_height());
         let (center_x, center_y) = (self.main_camera.target.x, self.main_camera.target.y);
         let top_left_x = center_x - width;
@@ -161,9 +165,17 @@ impl World {
             50.0,
             color_u8!(50, 120, 100, 100),
         );
+        draw_rectangle_lines(
+            viewport.x,
+            viewport.y,
+            viewport.w,
+            viewport.h,
+            50.0,
+            color_u8!(170, 120, 100, 100),
+        );
 
         for (_pos, chunk) in &self.chunks {
-            chunk.draw();
+            chunk.draw(viewport);
         }
 
         self.player.draw();

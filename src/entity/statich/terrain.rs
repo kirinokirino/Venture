@@ -1,6 +1,6 @@
 use macroquad::color::Color;
 use macroquad::color_u8;
-use macroquad::math::Vec2;
+use macroquad::math::{Rect, Vec2};
 use macroquad::shapes::draw_rectangle;
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -20,13 +20,15 @@ impl Terrain {
         }
     }
 
-    pub fn draw(&self) {
-        draw_rectangle(
-            self.position.x,
-            self.position.y,
-            self.size,
-            self.size,
-            color_u8!(0.0, self.color, 50.0 + self.color / 2.0, 70),
-        );
+    pub fn draw(&self, viewport: Rect) {
+        if viewport.contains(self.position) {
+            draw_rectangle(
+                self.position.x,
+                self.position.y,
+                self.size,
+                self.size,
+                color_u8!(0.0, self.color, 50.0 + self.color / 2.0, 70),
+            );
+        }
     }
 }

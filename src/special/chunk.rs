@@ -1,7 +1,7 @@
 use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::logging::warn;
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{vec2, Rect, Vec2};
 use macroquad::rand;
 use macroquad::texture::{draw_texture, Image, Texture2D};
 
@@ -187,19 +187,19 @@ impl Chunk {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, viewport: Rect) {
         for static_entity in &self.statics {
             match static_entity {
-                Static::Stone(stone) => stone.draw(),
-                Static::Road(segment) => segment.draw(),
-                Static::Terrain(terrain) => terrain.draw(),
+                Static::Stone(stone) => stone.draw(viewport),
+                Static::Road(segment) => segment.draw(viewport),
+                Static::Terrain(terrain) => terrain.draw(viewport),
             }
         }
         for dynamic_entity in &self.dynamics {
             dynamic_entity
                 .as_ref()
                 .expect("every dynamic entity should be present in draw call")
-                .draw();
+                .draw(viewport);
         }
     }
 

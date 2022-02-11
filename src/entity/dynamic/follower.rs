@@ -1,5 +1,5 @@
 use macroquad::color::DARKGRAY;
-use macroquad::math::{vec2, Mat3, Vec2};
+use macroquad::math::{vec2, Mat3, Rect, Vec2};
 use macroquad::rand;
 use macroquad::shapes::draw_poly;
 
@@ -47,7 +47,9 @@ impl Update for Follower {
         }
     }
 
-    fn draw(&self) {
-        draw_poly(self.position.x, self.position.y, 10, 20.0, 0.0, DARKGRAY);
+    fn draw(&self, viewport: Rect) {
+        if viewport.contains(self.position) {
+            draw_poly(self.position.x, self.position.y, 10, 20.0, 0.0, DARKGRAY);
+        }
     }
 }

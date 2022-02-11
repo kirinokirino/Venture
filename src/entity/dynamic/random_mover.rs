@@ -1,5 +1,5 @@
 use macroquad::color::DARKGRAY;
-use macroquad::math::{vec2, Mat3, Vec2};
+use macroquad::math::{vec2, Mat3, Rect, Vec2};
 use macroquad::rand;
 use macroquad::shapes::draw_poly;
 
@@ -37,14 +37,16 @@ impl Update for RandomMover {
         self.position += rotation_matrix.transform_vector2(delta);
     }
 
-    fn draw(&self) {
-        draw_poly(
-            self.position.x,
-            self.position.y,
-            5,
-            self.size,
-            self.rotation,
-            DARKGRAY,
-        );
+    fn draw(&self, viewport: Rect) {
+        if viewport.contains(self.position) {
+            draw_poly(
+                self.position.x,
+                self.position.y,
+                5,
+                self.size,
+                self.rotation,
+                DARKGRAY,
+            );
+        }
     }
 }

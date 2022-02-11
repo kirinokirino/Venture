@@ -1,5 +1,5 @@
 use macroquad::color::DARKGRAY;
-use macroquad::math::Vec2;
+use macroquad::math::{Rect, Vec2};
 use macroquad::shapes::draw_poly;
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -19,14 +19,16 @@ impl Stone {
         }
     }
 
-    pub fn draw(&self) {
-        draw_poly(
-            self.position.x,
-            self.position.y,
-            5,
-            self.size,
-            self.rotation,
-            DARKGRAY,
-        );
+    pub fn draw(&self, viewport: Rect) {
+        if viewport.contains(self.position) {
+            draw_poly(
+                self.position.x,
+                self.position.y,
+                5,
+                self.size,
+                self.rotation,
+                DARKGRAY,
+            );
+        }
     }
 }

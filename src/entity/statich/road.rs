@@ -1,5 +1,5 @@
 use macroquad::color::DARKGRAY;
-use macroquad::math::{Mat3, Vec2};
+use macroquad::math::{Mat3, Rect, Vec2};
 use macroquad::shapes::draw_line;
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -24,15 +24,17 @@ impl Segment {
         rotation_matrix.transform_point2(Vec2::new(0.0, self.size))
     }
 
-    pub fn draw(&self) {
-        let end = self.position + self.end();
-        draw_line(
-            self.position.x,
-            self.position.y,
-            end.x,
-            end.y,
-            self.size / 5.0,
-            DARKGRAY,
-        );
+    pub fn draw(&self, viewport: Rect) {
+        if viewport.contains(self.position) {
+            let end = self.position + self.end();
+            draw_line(
+                self.position.x,
+                self.position.y,
+                end.x,
+                end.y,
+                self.size / 5.0,
+                DARKGRAY,
+            );
+        }
     }
 }

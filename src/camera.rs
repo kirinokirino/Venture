@@ -1,7 +1,7 @@
 use std::default::Default;
 
 use macroquad::input::{is_key_down, mouse_position, KeyCode};
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{vec2, Rect, Vec2};
 use macroquad::window::{screen_height, screen_width};
 
 use crate::common::map;
@@ -53,6 +53,17 @@ impl Camera {
     #[must_use]
     pub fn viewport_size(&self) -> (f32, f32) {
         (2.0 * (1.0 / self.zoom.x), 2.0 * (1.0 / self.zoom.y))
+    }
+
+    #[must_use]
+    pub fn viewport_rect(&self) -> Rect {
+        let (viewport_width, viewport_height) = self.viewport_size();
+        Rect::new(
+            self.target.x - (viewport_width / 2.0),
+            self.target.y - (viewport_height / 2.0),
+            viewport_width,
+            viewport_height,
+        )
     }
 
     #[must_use]

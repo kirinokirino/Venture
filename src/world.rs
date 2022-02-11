@@ -1,4 +1,5 @@
 use std::default::Default;
+use std::fmt::Display;
 
 use macroquad::camera::set_default_camera;
 use macroquad::camera::{set_camera, Camera2D};
@@ -7,8 +8,11 @@ use macroquad::color_u8;
 use macroquad::input::{
     is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
-use macroquad::math::{vec2, Mat3};
+use macroquad::logging::debug;
+use macroquad::math::{vec2, Mat3, Vec2};
+use macroquad::rand;
 use macroquad::shapes::draw_rectangle_lines;
+use macroquad::telemetry::log_string;
 use macroquad::text::draw_text;
 use macroquad::time::{get_fps, get_time};
 use macroquad::window::{clear_background, screen_height, screen_width};
@@ -20,7 +24,7 @@ use crate::special::chunk::Chunk;
 use crate::special::noise::Noise;
 use crate::special::square::Square;
 
-pub const CHUNK_SIZE: f32 = 20_000.0;
+pub const CHUNK_SIZE: f32 = 5_000.0;
 pub const NOISE_IMAGE_SIZE: u16 = 2001;
 
 pub struct World {
@@ -52,23 +56,46 @@ impl World {
         new_noise.set_noise(0, 0.001);
         self.noise_generators.push(new_noise);
 
+        self.generate_chunk(WorldCoordinate { x: 0, y: 0 });
+        self.generate_chunk(WorldCoordinate { x: 0, y: 1 });
+    }
+
+    fn generate_chunk(&mut self, pos: WorldCoordinate) {
+        log_string(format!("Chunk spawn at {}", pos).as_str());
         let mut chunk = Chunk::new();
-        let world_center = WorldCoordinate { x: 0, y: 0 };
         chunk.populate(
-            world_center,
+            pos,
             self.noise_generators
                 .last()
                 .expect("World needs to have a noise generator to populate a chunk"),
         );
-        self.chunks.insert(world_center, chunk);
+        self.chunks.insert(pos, chunk);
     }
 
     pub fn input(&mut self) {
-        let _lmb = is_mouse_button_pressed(MouseButton::Left);
+        let lmb = is_mouse_button_pressed(MouseButton::Left);
         let W = is_key_down(KeyCode::W) || is_key_down(KeyCode::Comma);
         let S = is_key_down(KeyCode::S) || is_key_down(KeyCode::O);
         let A = is_key_down(KeyCode::A);
         let D = is_key_down(KeyCode::D) || is_key_down(KeyCode::E);
+
+        if lmb {
+            let camera = self.main_camera;
+            debug!(
+                "{}",
+                format!(
+                    "target: {}, zoom: {:?}, view_port: {:?}",
+                    camera.target,
+                    camera.zoom,
+                    camera.viewport_size(),
+                )
+            );
+            debug!(
+                "mouse: {:?}, mouse_world: {}",
+                mouse_position(),
+                camera.mouse_world_position()
+            );
+        }
 
         let player_speed = -3.0;
         if is_key_down(KeyCode::LeftControl) {
@@ -147,7 +174,11 @@ impl World {
         // Screen space, render fixed ui
         set_default_camera();
         draw_text(
-            &format!("mouse: {:?}, fps: {}", mouse_position(), get_fps()),
+            &format!(
+                "mouse: {:?}, fps: {}",
+                self.main_camera.mouse_world_position(),
+                get_fps()
+            ),
             10.0,
             20.0,
             30.0,
@@ -194,5 +225,11 @@ impl WorldCoordinate {
     #[must_use]
     pub fn offsets(&self, chunk_size: f32) -> (f32, f32) {
         (self.x as f32 * chunk_size, self.y as f32 * chunk_size)
+    }
+}
+
+impl Display for WorldCoordinate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "x:{}, y:{}", self.x, self.y)
     }
 }

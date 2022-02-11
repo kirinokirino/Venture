@@ -59,9 +59,9 @@ impl Chunk {
             "xoff: {}, yoff: {}, cell_size: {}, cells: {}",
             xoff, yoff, cell_size, cells
         );
-        for y in 0..=cells {
+        for y in 0..cells {
             let pos_y = (y as f32).mul_add(cell_size, yoff);
-            for x in 0..=cells {
+            for x in 0..cells {
                 let pos_x = (x as f32).mul_add(cell_size, xoff);
 
                 let noise_x = x * cell_scale as usize;

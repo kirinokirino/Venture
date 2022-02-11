@@ -40,6 +40,8 @@ pub mod entity;
 pub mod special;
 pub mod world;
 
+use special::profiler::profiler;
+
 #[allow(clippy::future_not_send)]
 #[macroquad::main("Name")]
 async fn main() {
@@ -50,6 +52,7 @@ async fn main() {
         world.input();
         world.update();
         world.draw();
+    	profiler();
         next_frame().await;
     }
 }

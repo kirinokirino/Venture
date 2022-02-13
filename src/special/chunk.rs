@@ -3,6 +3,7 @@ use macroquad::color_u8;
 use macroquad::logging::{info, warn};
 use macroquad::math::{vec2, Rect, Vec2};
 use macroquad::rand;
+use macroquad::shapes::draw_rectangle;
 use macroquad::texture::{draw_texture, Image, Texture2D};
 
 use once_cell::sync::OnceCell;
@@ -20,7 +21,7 @@ use crate::special::noise::Noise;
 use crate::world::{ChunkPosition, CHUNK_SIZE, CHUNK_TILE_SIZE, NOISE_IMAGE_SIZE};
 
 pub struct Chunk {
-    world_position: ChunkPosition,
+    chunk_position: ChunkPosition,
 
     pub dynamics: Vec<Option<Box<dyn Update>>>,
     pub statics: Vec<Static>,
@@ -33,7 +34,7 @@ impl Chunk {
     #[must_use]
     pub fn new(world_position: ChunkPosition) -> Self {
         Self {
-            world_position,
+            chunk_position: world_position,
             dynamics: Vec::new(),
             statics: Vec::new(),
             noise_image: OnceCell::new(),
@@ -42,7 +43,7 @@ impl Chunk {
     }
 
     pub fn init(&mut self, noise: &Noise) {
-        let (xoff, yoff) = self.world_position.offsets(f32::from(NOISE_IMAGE_SIZE));
+        let (xoff, yoff) = self.chunk_position.offsets(f32::from(NOISE_IMAGE_SIZE));
         let image = Noise::gen_image(NOISE_IMAGE_SIZE, xoff, yoff, noise.get());
         match self.noise_image.set(image) {
             Ok(_) => info!("noise x: {}, noise y: {}", xoff, yoff),
@@ -56,7 +57,7 @@ impl Chunk {
         let cells = CHUNK_SIZE as usize;
         let cell_size = CHUNK_TILE_SIZE;
 
-        let (xoff, yoff) = self.world_position.offsets(cells as f32 * cell_size as f32);
+        let (xoff, yoff) = self.chunk_position.offsets(cells as f32 * cell_size as f32);
         info!(
             "xoff: {}, yoff: {}, cell_size: {}, cells: {}",
             xoff, yoff, cell_size, cells
@@ -190,6 +191,9 @@ impl Chunk {
     }
 
     pub fn draw(&self, viewport: Rect) {
+        let chunk_size = f32::from(CHUNK_SIZE) * CHUNK_TILE_SIZE;
+        let (x, y) = self.chunk_position.offsets(chunk_size);
+        draw_rectangle(x, y, chunk_size, chunk_size, color_u8!(255, 255, 255, 255));
         for static_entity in &self.statics {
             match static_entity {
                 Static::Stone(stone) => stone.draw(viewport),

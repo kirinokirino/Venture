@@ -61,26 +61,37 @@ impl World {
         new_noise.set_noise(self.seed, 0.005);
         self.noise_generators.push(new_noise);
 
-        self.generate_chunk(ChunkPosition { x: -1, y: -1 });
-        self.generate_chunk(ChunkPosition { x: -1, y: 0 });
-        self.generate_chunk(ChunkPosition { x: -1, y: 1 });
-        self.generate_chunk(ChunkPosition { x: 0, y: -1 });
-        self.generate_chunk(ChunkPosition { x: 0, y: 0 });
-        self.generate_chunk(ChunkPosition { x: 0, y: 1 });
-        self.generate_chunk(ChunkPosition { x: 1, y: -1 });
-        self.generate_chunk(ChunkPosition { x: 1, y: 0 });
-        self.generate_chunk(ChunkPosition { x: 1, y: 1 });
+        self.generate_chunks_around(ChunkPosition::from(self.player.center));
+    }
+
+    fn generate_chunks_around(&mut self, pos: ChunkPosition) {
+        self.generate_chunk(pos.add(-1, -1));
+        self.generate_chunk(pos.add(-1, 0));
+        self.generate_chunk(pos.add(-1, 1));
+        self.generate_chunk(pos.add(0, -1));
+        self.generate_chunk(pos);
+        self.generate_chunk(pos.add(0, 1));
+        self.generate_chunk(pos.add(1, -1));
+        self.generate_chunk(pos.add(1, 0));
+        self.generate_chunk(pos.add(1, 1));
+    }
+
+    fn reset(&mut self) {
+        self.chunks.clear();
+        self.setup();
     }
 
     fn generate_chunk(&mut self, pos: ChunkPosition) {
-        log_string(format!("Chunk spawn at {}", pos).as_str());
-        let mut chunk = Chunk::new(pos);
-        chunk.populate(
-            self.noise_generators
-                .last()
-                .expect("World needs to have a noise generator to populate a chunk"),
-        );
-        self.chunks.insert(pos, chunk);
+        if !self.chunks.contains_key(&pos) {
+            log_string(format!("Chunk spawn at {}", pos).as_str());
+            let mut chunk = Chunk::new(pos);
+            chunk.populate(
+                self.noise_generators
+                    .last()
+                    .expect("World needs to have a noise generator to populate a chunk"),
+            );
+            self.chunks.insert(pos, chunk);
+        }
     }
 
     pub fn input(&mut self) {
@@ -92,7 +103,7 @@ impl World {
 
         if is_key_down(KeyCode::Space) {
             self.seed = u64::from(rand::rand());
-            self.setup();
+            self.reset();
         }
 
         if lmb {
@@ -132,9 +143,14 @@ impl World {
             } else if D {
                 rotation -= 0.01 * reversed;
             }
+            let last_chunk = ChunkPosition::from(self.player.center);
             self.player.rotation += rotation;
             let r = Mat3::from_rotation_z(self.player.rotation);
             self.player.center += r.transform_vector2(delta * player_speed);
+            let chunk = ChunkPosition::from(self.player.center);
+            if last_chunk != chunk {
+                self.generate_chunks_around(ChunkPosition::from(self.player.center));
+            }
 
             self.main_camera
                 .set_follow(Some(self.player.center), Some(self.player.rotation));
@@ -144,8 +160,12 @@ impl World {
     pub fn update(&mut self) {
         self.update_time(get_time());
         self.main_camera.update();
-        for (_pos, chunk) in &mut self.chunks {
-            chunk.update();
+
+        let player_chunk = ChunkPosition::from(self.player.center);
+        for (pos, chunk) in &mut self.chunks {
+            if pos.is_within(player_chunk, 1) {
+                chunk.update();
+            }
         }
     }
 
@@ -157,7 +177,7 @@ impl World {
     }
 
     pub fn draw(&self) {
-        clear_background(color_u8!(255, 255, 255, 255));
+        clear_background(color_u8!(0, 0, 0, 255));
         // Camera space, render game objects
         let zoom = vec2(self.main_camera.zoom.x, -self.main_camera.zoom.y);
         set_camera(&Camera2D {
@@ -187,8 +207,11 @@ impl World {
             color_u8!(50, 120, 100, 100),
         );
 
-        for (_pos, chunk) in &self.chunks {
-            chunk.draw(viewport);
+        let player_chunk = ChunkPosition::from(self.player.center);
+        for (pos, chunk) in &self.chunks {
+            if pos.is_within(player_chunk, 1) {
+                chunk.draw(viewport);
+            }
         }
 
         self.player.draw();
@@ -213,16 +236,11 @@ impl World {
             30.0,
             colors::BLACK,
         );
-        let noise = self
-            .noise_generators
-            .last()
-            .expect("World should have at least 1 initialized noise generator");
+
         draw_text(
             &format!(
-                "x:{:3.0} y:{:3.0}, biome: {}",
-                self.player.center.x,
-                self.player.center.y,
-                noise.get_point(self.player.center.x, self.player.center.y) as i32
+                "x:{:3.0} y:{:3.0}",
+                self.player.center.x, self.player.center.y
             ),
             10.0,
             40.0,
@@ -275,6 +293,25 @@ impl ChunkPosition {
     #[must_use]
     pub fn offsets(&self, chunk_size: f32) -> (f32, f32) {
         (self.x as f32 * chunk_size, self.y as f32 * chunk_size)
+    }
+
+    #[must_use]
+    pub const fn add(&self, delta_x: i32, delta_y: i32) -> Self {
+        Self {
+            x: self.x + delta_x,
+            y: self.y + delta_y,
+        }
+    }
+
+    #[must_use]
+    pub const fn is_within(&self, other: Self, distance: i32) -> bool {
+        if (self.y - other.y).abs() > distance {
+            return false;
+        }
+        if (self.x - other.x).abs() > distance {
+            return false;
+        }
+        true
     }
 }
 

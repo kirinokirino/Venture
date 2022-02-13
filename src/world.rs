@@ -1,3 +1,4 @@
+use std::convert::From;
 use std::default::Default;
 use std::fmt::Display;
 
@@ -9,7 +10,7 @@ use macroquad::input::{
     is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::logging::debug;
-use macroquad::math::{vec2, Mat3};
+use macroquad::math::{vec2, Mat3, Vec2};
 use macroquad::rand;
 use macroquad::shapes::draw_rectangle_lines;
 use macroquad::telemetry::log_string;
@@ -24,7 +25,7 @@ use crate::special::chunk::Chunk;
 use crate::special::noise::Noise;
 use crate::special::square::Square;
 
-pub const CHUNK_SIZE: u16 = 32;
+pub const CHUNK_SIZE: u16 = 16;
 pub const CHUNK_TILE_SIZE: f32 = 400.0;
 pub const NOISE_IMAGE_SIZE: u16 = 256;
 
@@ -37,7 +38,7 @@ pub struct World {
     main_camera: Camera,
     player: Square,
 
-    chunks: IndexMap<WorldCoordinate, Chunk>,
+    chunks: IndexMap<ChunkPosition, Chunk>,
 }
 
 impl World {
@@ -60,13 +61,18 @@ impl World {
         new_noise.set_noise(self.seed, 0.005);
         self.noise_generators.push(new_noise);
 
-        self.generate_chunk(WorldCoordinate { x: 0, y: 0 });
-        self.generate_chunk(WorldCoordinate { x: 0, y: -1 });
-        self.generate_chunk(WorldCoordinate { x: -1, y: 0 });
-        self.generate_chunk(WorldCoordinate { x: -1, y: -1 });
+        self.generate_chunk(ChunkPosition { x: -1, y: -1 });
+        self.generate_chunk(ChunkPosition { x: -1, y: 0 });
+        self.generate_chunk(ChunkPosition { x: -1, y: 1 });
+        self.generate_chunk(ChunkPosition { x: 0, y: -1 });
+        self.generate_chunk(ChunkPosition { x: 0, y: 0 });
+        self.generate_chunk(ChunkPosition { x: 0, y: 1 });
+        self.generate_chunk(ChunkPosition { x: 1, y: -1 });
+        self.generate_chunk(ChunkPosition { x: 1, y: 0 });
+        self.generate_chunk(ChunkPosition { x: 1, y: 1 });
     }
 
-    fn generate_chunk(&mut self, pos: WorldCoordinate) {
+    fn generate_chunk(&mut self, pos: ChunkPosition) {
         log_string(format!("Chunk spawn at {}", pos).as_str());
         let mut chunk = Chunk::new(pos);
         chunk.populate(
@@ -100,10 +106,12 @@ impl World {
                     camera.viewport_size(),
                 )
             );
+            let mouse = camera.mouse_world_position();
             debug!(
-                "mouse: {:?}, mouse_world: {}",
+                "mouse: {:?}, mouse_world: {}, mouse_chunk: {}",
                 mouse_position(),
-                camera.mouse_world_position()
+                mouse,
+                ChunkPosition::from(mouse)
             );
         }
 
@@ -192,9 +200,13 @@ impl World {
         set_default_camera();
         draw_text(
             &format!(
-                "mouse: {:?}, fps: {}",
-                self.main_camera.mouse_world_position(),
-                get_fps()
+                "fps: {}, mouse: {:?}, chunk: {}",
+                get_fps(),
+                (
+                    self.main_camera.mouse_world_position().x as i32,
+                    self.main_camera.mouse_world_position().y as i32
+                ),
+                ChunkPosition::from(self.main_camera.mouse_world_position())
             ),
             10.0,
             20.0,
@@ -210,7 +222,7 @@ impl World {
                 "x:{:3.0} y:{:3.0}, biome: {}",
                 self.player.center.x,
                 self.player.center.y,
-                noise.get_point(self.player.center.x, self.player.center.y)
+                noise.get_point(self.player.center.x, self.player.center.y) as i32
             ),
             10.0,
             40.0,
@@ -254,19 +266,31 @@ struct Time {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct WorldCoordinate {
+pub struct ChunkPosition {
     x: i32,
     y: i32,
 }
 
-impl WorldCoordinate {
+impl ChunkPosition {
     #[must_use]
     pub fn offsets(&self, chunk_size: f32) -> (f32, f32) {
         (self.x as f32 * chunk_size, self.y as f32 * chunk_size)
     }
 }
 
-impl Display for WorldCoordinate {
+impl From<Vec2> for ChunkPosition {
+    fn from(position: Vec2) -> Self {
+        let chunk_size = f32::from(CHUNK_SIZE) * CHUNK_TILE_SIZE;
+        let x = (position.x / chunk_size).floor();
+        let y = (position.y / chunk_size).floor();
+        Self {
+            x: x as i32,
+            y: y as i32,
+        }
+    }
+}
+
+impl Display for ChunkPosition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "x:{}, y:{}", self.x, self.y)
     }

@@ -42,7 +42,7 @@ pub mod world;
 use special::profiler::profiler;
 
 #[allow(clippy::future_not_send)]
-#[macroquad::main("Name")]
+#[macroquad::main("game")]
 async fn main() {
     let mut world = world::World::new();
     world.setup();

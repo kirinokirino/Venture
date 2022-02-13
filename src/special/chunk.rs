@@ -17,10 +17,10 @@ use crate::entity::statich::terrain::Terrain;
 use crate::entity::statich::Static;
 use crate::special::noise::Noise;
 
-use crate::world::{WorldCoordinate, CHUNK_SIZE, CHUNK_TILE_SIZE, NOISE_IMAGE_SIZE};
+use crate::world::{ChunkPosition, CHUNK_SIZE, CHUNK_TILE_SIZE, NOISE_IMAGE_SIZE};
 
 pub struct Chunk {
-    world_position: WorldCoordinate,
+    world_position: ChunkPosition,
 
     pub dynamics: Vec<Option<Box<dyn Update>>>,
     pub statics: Vec<Static>,
@@ -31,7 +31,7 @@ pub struct Chunk {
 
 impl Chunk {
     #[must_use]
-    pub fn new(world_position: WorldCoordinate) -> Self {
+    pub fn new(world_position: ChunkPosition) -> Self {
         Self {
             world_position,
             dynamics: Vec::new(),

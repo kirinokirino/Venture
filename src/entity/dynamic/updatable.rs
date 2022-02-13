@@ -7,5 +7,5 @@ pub trait Update {
         Vec2::new(0.0, 0.0)
     }
     fn update(&mut self, _chunk: &mut Chunk) {}
-    fn draw(&self, viewport: Rect) {}
+    fn draw(&self, _viewport: Rect) {}
 }

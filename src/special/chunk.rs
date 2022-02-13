@@ -62,16 +62,16 @@ impl Chunk {
             xoff, yoff, cell_size, cells
         );
         for y in 0..cells {
-            let pos_y = (y as f32).mul_add(cell_size.into(), yoff);
+            let pos_y = (y as f32).mul_add(cell_size, yoff);
             for x in 0..cells {
-                let pos_x = (x as f32).mul_add(cell_size.into(), xoff);
+                let pos_x = (x as f32).mul_add(cell_size, xoff);
 
                 let noise_value = self.get_point(
-                    x as u32 * u32::from((NOISE_IMAGE_SIZE / CHUNK_SIZE)),
-                    y as u32 * u32::from((NOISE_IMAGE_SIZE / CHUNK_SIZE)),
+                    x as u32 * u32::from(NOISE_IMAGE_SIZE / CHUNK_SIZE),
+                    y as u32 * u32::from(NOISE_IMAGE_SIZE / CHUNK_SIZE),
                 );
 
-                self.populate_cell(pos_x, pos_y, cell_size.into(), noise_value);
+                self.populate_cell(pos_x, pos_y, cell_size, noise_value);
 
                 self.statics.push(Static::Terrain(Terrain::new(
                     vec2(pos_x as f32, pos_y as f32),

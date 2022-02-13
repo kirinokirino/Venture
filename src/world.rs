@@ -9,8 +9,8 @@ use macroquad::input::{
     is_key_down, is_mouse_button_pressed, mouse_position, KeyCode, MouseButton,
 };
 use macroquad::logging::debug;
-use macroquad::math::{vec2, Mat3, Rect, Vec2};
-use macroquad::rand;
+use macroquad::math::{vec2, Mat3};
+
 use macroquad::shapes::draw_rectangle_lines;
 use macroquad::telemetry::log_string;
 use macroquad::text::draw_text;
@@ -19,7 +19,7 @@ use macroquad::window::{clear_background, screen_height, screen_width};
 
 use indexmap::IndexMap;
 
-use crate::camera::{top_down_camera_controls, Camera};
+use crate::special::camera::{top_down_camera_controls, Camera};
 use crate::special::chunk::Chunk;
 use crate::special::noise::Noise;
 use crate::special::square::Square;

@@ -36,7 +36,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
             zone.duration,
             1.0 / zone.duration
         );
-        if zone.children.len() != 0 {
+        if !zone.children.is_empty() {
             ui.tree_node(hash!(hash!(), n), &label, |ui| {
                 for (m, zone) in zone.children.iter().enumerate() {
                     zone_ui(ui, zone, n * 1000 + m + 1);
@@ -60,7 +60,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
     let mut selected_frame = None;
 
     // select the slowest frame among the ones close to the mouse cursor
-    if rect.contains(vec2(mouse_x, mouse_y)) && state.frames_buffer.len() >= 1 {
+    if rect.contains(vec2(mouse_x, mouse_y)) && !state.frames_buffer.is_empty() {
         let x = ((mouse_x - pos.x - 2.) / w * FRAMES_BUFFER_CAPACITY as f32) as i32;
 
         let min = clamp(x - 2, 0, state.frames_buffer.len() as i32 - 1) as usize;
@@ -118,10 +118,8 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         if ui.button(None, "resume") {
             state.paused = false;
         }
-    } else {
-        if ui.button(None, "pause") {
-            state.paused = true;
-        }
+    } else if ui.button(None, "pause") {
+        state.paused = true;
     }
     if state.selected_frame.is_some() {
         ui.same_line(100.0);
@@ -177,7 +175,7 @@ pub fn profiler() {
 
     let frame = telemetry::frame();
 
-    if state.paused == false && state.profiler_window_opened {
+    if !state.paused && state.profiler_window_opened {
         state.frames_buffer.insert(0, frame);
     }
     let time = get_frame_time();

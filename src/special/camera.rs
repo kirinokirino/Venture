@@ -45,7 +45,7 @@ impl Camera {
         self.followed_rot = None;
     }
 
-    pub fn set_follow(&mut self, position: Option<Vec2>, rotation: Option<f32>) {
+    pub fn set_follow(&mut self, position: Option<Vec2>, _rotation: Option<f32>) {
         self.followed_pos = position;
         //self.followed_rot = rotation;
     }

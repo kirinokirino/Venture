@@ -1,4 +1,5 @@
+pub mod camera;
 pub mod chunk;
 pub mod noise;
-pub mod square;
 pub mod profiler;
+pub mod square;

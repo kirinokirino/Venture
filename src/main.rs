@@ -34,7 +34,6 @@
 #![allow(clippy::cast_precision_loss, clippy::missing_panics_doc)]
 use macroquad::window::next_frame;
 
-pub mod camera;
 pub mod common;
 pub mod entity;
 pub mod special;
@@ -52,7 +51,7 @@ async fn main() {
         world.input();
         world.update();
         world.draw();
-    	profiler();
+        profiler();
         next_frame().await;
     }
 }

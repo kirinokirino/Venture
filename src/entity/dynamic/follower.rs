@@ -1,6 +1,6 @@
 use macroquad::color::DARKGRAY;
-use macroquad::math::{vec2, Mat3, Rect, Vec2};
-use macroquad::rand;
+use macroquad::math::{Rect, Vec2};
+
 use macroquad::shapes::draw_poly;
 
 use crate::entity::dynamic::updatable::Update;

@@ -10,7 +10,7 @@ use macroquad::input::{
 };
 use macroquad::logging::debug;
 use macroquad::math::{vec2, Mat3};
-
+use macroquad::rand;
 use macroquad::shapes::draw_rectangle_lines;
 use macroquad::telemetry::log_string;
 use macroquad::text::draw_text;
@@ -30,6 +30,8 @@ pub const NOISE_IMAGE_SIZE: u16 = 256;
 
 pub struct World {
     time: Time,
+
+    seed: u64,
     noise_generators: Vec<Noise>,
 
     main_camera: Camera,
@@ -43,6 +45,7 @@ impl World {
     pub fn new() -> Self {
         Self {
             time: Time::default(),
+            seed: 0,
             noise_generators: Vec::new(),
 
             main_camera: Camera::new(),
@@ -54,7 +57,7 @@ impl World {
 
     pub fn setup(&mut self) {
         let mut new_noise = Noise::new();
-        new_noise.set_noise(0, 0.005);
+        new_noise.set_noise(self.seed, 0.005);
         self.noise_generators.push(new_noise);
 
         self.generate_chunk(WorldCoordinate { x: 0, y: 0 });
@@ -80,6 +83,11 @@ impl World {
         let S = is_key_down(KeyCode::S) || is_key_down(KeyCode::O);
         let A = is_key_down(KeyCode::A);
         let D = is_key_down(KeyCode::D) || is_key_down(KeyCode::E);
+
+        if is_key_down(KeyCode::Space) {
+            self.seed = u64::from(rand::rand());
+            self.setup();
+        }
 
         if lmb {
             let camera = self.main_camera;
@@ -206,6 +214,27 @@ impl World {
             ),
             10.0,
             40.0,
+            30.0,
+            colors::BLACK,
+        );
+
+        let statics: usize = self
+            .chunks
+            .iter()
+            .map(|(_, chunk)| chunk.statics.len())
+            .sum();
+        let dynamics: usize = self
+            .chunks
+            .iter()
+            .map(|(_, chunk)| chunk.dynamics.len())
+            .sum();
+        draw_text(
+            &format!(
+                "static entities: {}, dynamic entities: {}",
+                statics, dynamics
+            ),
+            10.0,
+            60.0,
             30.0,
             colors::BLACK,
         );

@@ -20,6 +20,7 @@ use macroquad::window::{clear_background, screen_height, screen_width};
 
 use indexmap::IndexMap;
 
+use crate::entity::dynamic::updatable::Update;
 use crate::special::camera::{top_down_camera_controls, Camera};
 use crate::special::chunk::Chunk;
 use crate::special::noise::Noise;
@@ -28,6 +29,8 @@ use crate::special::square::Square;
 pub const CHUNK_SIZE: u16 = 16;
 pub const CHUNK_TILE_SIZE: f32 = 400.0;
 pub const NOISE_IMAGE_SIZE: u16 = 256;
+pub const RENDER_DISTANCE: i32 = 2;
+pub const UPDATE_DISTANCE: i32 = 5;
 
 pub struct World {
     time: Time,
@@ -39,6 +42,7 @@ pub struct World {
     player: Square,
 
     chunks: IndexMap<ChunkPosition, Chunk>,
+    out_of_chunk: Vec<Option<Box<dyn Update>>>,
 }
 
 impl World {
@@ -53,6 +57,7 @@ impl World {
             player: Square::new(vec2(0.0, 0.0)),
 
             chunks: IndexMap::new(),
+            out_of_chunk: Vec::new(),
         }
     }
 
@@ -126,7 +131,14 @@ impl World {
             );
         }
 
-        let player_speed = -3.0;
+        let player_speed = -1.0;
+        self.player.rotation += rand::gen_range(-1., 1.);
+        let delta = vec2(0.0, player_speed);
+        let rotation_matrix = Mat3::from_rotation_z(self.player.rotation.to_radians());
+        self.player.center += rotation_matrix.transform_vector2(delta);
+
+        self.generate_chunks_around(ChunkPosition::from(self.player.center));
+
         if is_key_down(KeyCode::LeftControl) {
             top_down_camera_controls(&mut self.main_camera);
         } else {
@@ -163,8 +175,20 @@ impl World {
 
         let player_chunk = ChunkPosition::from(self.player.center);
         for (pos, chunk) in &mut self.chunks {
-            if pos.is_within(player_chunk, 1) {
+            if pos.is_within(player_chunk, UPDATE_DISTANCE) {
                 chunk.update();
+                self.out_of_chunk.extend(chunk.extract_outside_entities());
+            }
+        }
+
+        for entity in self.out_of_chunk.drain(..) {
+            let entity = unsafe {
+                // SAFETY Extracted entities can't be None
+                entity.unwrap_unchecked()
+            };
+            let new_chunk = ChunkPosition::from(entity.get_pos());
+            if let Some(chunk) = self.chunks.get_mut(&new_chunk) {
+                chunk.dynamics.push(Some(entity));
             }
         }
     }
@@ -209,7 +233,7 @@ impl World {
 
         let player_chunk = ChunkPosition::from(self.player.center);
         for (pos, chunk) in &self.chunks {
-            if pos.is_within(player_chunk, 1) {
+            if pos.is_within(player_chunk, RENDER_DISTANCE) {
                 chunk.draw(viewport);
             }
         }
@@ -234,7 +258,7 @@ impl World {
             10.0,
             20.0,
             30.0,
-            colors::BLACK,
+            colors::GRAY,
         );
 
         draw_text(
@@ -245,7 +269,7 @@ impl World {
             10.0,
             40.0,
             30.0,
-            colors::BLACK,
+            colors::GRAY,
         );
 
         let statics: usize = self
@@ -266,7 +290,7 @@ impl World {
             10.0,
             60.0,
             30.0,
-            colors::BLACK,
+            colors::GRAY,
         );
     }
 }

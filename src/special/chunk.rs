@@ -190,6 +190,33 @@ impl Chunk {
         }
     }
 
+    pub fn extract_outside_entities(&mut self) -> Vec<Option<Box<dyn Update>>> {
+        let mut extracted_entities: Vec<Option<Box<dyn Update>>> = Vec::new();
+        let mut i = 0;
+        while i < self.dynamics.len() {
+            if self.in_chunk(
+                (&self.dynamics[i])
+                    .as_ref()
+                    .expect("Should not be mem::replaced in this function.")
+                    .get_pos(),
+            ) {
+                i += 1;
+            } else {
+                let val = self.dynamics.remove(i);
+                extracted_entities.push(val);
+            }
+        }
+
+        extracted_entities
+    }
+
+    fn in_chunk(&self, position: Vec2) -> bool {
+        let chunk_size = f32::from(CHUNK_SIZE) * CHUNK_TILE_SIZE;
+        let (x, y) = self.chunk_position.offsets(chunk_size);
+        let chunk_rect = Rect::new(x, y, chunk_size, chunk_size);
+        chunk_rect.contains(position)
+    }
+
     pub fn draw(&self, viewport: Rect) {
         let chunk_size = f32::from(CHUNK_SIZE) * CHUNK_TILE_SIZE;
         let (x, y) = self.chunk_position.offsets(chunk_size);
